@@ -1,5 +1,21 @@
-//Advanced filtering sorting pagination
-//http://localhost:5000/api/players?page=1&limit=4&sort=-acutionPrice&acutionPrice[gte]=10
+const { json } = require("body-parser");
+
+/*Advanced filtering sorting pagination
+http://localhost:5000/api/players?page=1&limit=4&sort=-acutionPrice&acutionPrice[gte]=10
+console.log(req.query);
+  {
+  page: '1',
+  limit: '4',
+  sort: '-acutionPrice',
+  acutionPrice: { gte: '10' }
+}
+here how this works with mongodb:::___
+req.query for above long url if we can get
+{price: { $gte: 1000 } this is the way mongodb understand or works
+generally we get all items like this const playes=await players.find({price:{$gte:1000}}) or
+const playes=await players.find().sort(-acutionPrice)
+but we need these together with one url/parameter
+*/
 class APIfeatures {
   constructor(query, queryString) {
     this.query = query; //allplayers
@@ -7,45 +23,41 @@ class APIfeatures {
   }
   //http://localhost:5000/api/players?acutionPrice[gte]=10
   filtering() {
-    const queryobj = { ...this.queryString };
-    const excludeFields = ["page", "sort", "limit"];
-    excludeFields.forEach((el) => delete queryobj[el]); //search queryString without page,limit,sort only name[gte|gt|lt|lte]=value
-    let querystr = JSON.stringify(queryobj); //convert queryString to string
-    //The replace() method searches a string for a specified value, or a regular expression, and returns a new string where the specified values are replaced. To replace all occurrences of a specified value, use the global (g) modifier
-    console.log(querystr); //{"acutionPrice":{"gte":"10"}}
-    //replace(regexp, replacerFunction)
+    const queryobj = { ...this.queryString }; //copying queryString like ...{price:{$gte:10}}
+    /*we works with pagination sort filter,for filtering we need to remove page sort limit fields
+    {price:{$gte:10}, sort:'-acutionPrice'} we need remove sort:'-acutionPrice'
+    after removing we get {price:{$gte:10} } delete method delete item but contain empty space for removed items
+    thats why there is empty space {price:{$gte:10}emptyspace}
+    josn.stringify does {price:{gte:10}} --> {"price":{"$gte":"10"}}
+    json.stringify & queryStre.replace() helps to add dollar sign before gte or before key string {"price":{"$gte":"10"}}
+    replace(/\b(gte|gt|lt|lte)\b/g,replacerFunction)
+    replcaerFunction-->(match) => "$" + match) runs whenever anything match to /\b(gte|gt|lt|lte)\b/g
     querystr = querystr.replace(/\b(gte|gt|lt|lte)\b/g, (match) => "$" + match);
-    //without querystr.replace(/\b(gte|gt|lt|lte)\b/g, (match) => "$" + match) -->{"acutionPrice":{"undefined":"10"}
-    //without "$"+match throws an error
-    // "message": "Cast to Number failed for value \"{ gte: '10' }\" at path \"acutionPrice\" for model \"players\""
-    console.log(querystr); //{"acutionPrice":{"$gte":"10"}}
+    */
+    const excludeFields = ["page", "sort", "limit"];
+    excludeFields.forEach((el) => delete queryobj[el]);
+    let querystr = JSON.stringify(queryobj);
+    querystr = querystr.replace(/\b(gte|gt|lt|lte)\b/g, (match) => "$" + match);
+    /*{"price":{"$gte":"10"}}-->after json.parse-->{price:{$gte:10}} mongodb understand this not {"price":{"$gte":"10"}}
+    thats why we do json.parse*/
     this.query.find(JSON.parse(querystr));
-    console.log(querystr); //{"acutionPrice":{"$gte":"10"}}
-    return this; //players
+    // console.log(querystr);
+    return this;
   }
   //http://localhost:5000/api/players?sort=-acutionPrice
   sorting() {
+    /*
+      this.queryString.sort we can get this from req.query
+      this.queryString.sort.split(",")--> seperate query into comma {price:{gte:10 }[comma]sort:'-price'}-->{price:{gte:10 },sort:'-price'}
+      this.queryString.sort.split(",").join(" ")-->
+      {price:{gte:10 },["space"]sort:'-price'}-->{price:{gte:10 }, sort:'-price'}
+      */
     if (this.queryString.sort) {
-      // var names = [
-      //   "Foo",
-      //   "Bar",
-      //   "Morse",
-      //   "Foo",
-      //   "Bar",
-      //   "Luke",
-      //   "Lea",
-      //   "Han Solo",
-      // ];
-
-      // var str = names.join(":");
-      // console.log(str); // Foo:Bar:Morse:Foo:Bar:Luke:Lea:Han Solo
-
-      // var n = str.split(":");
-      // console.log(n);
-      // [ 'Foo', 'Bar', 'Morse', 'Foo', 'Bar', 'Luke', 'Lea', 'Han Solo' ]
+      //check if sort exists on req.query
       const sortby = this.queryString.sort.split(",").join(" ");
-      this.query = this.query.sort(sortby);
+      this.query = this.query.sort(sortby); //simple sort array function
     } else {
+      //if no sort we sort it by date you can do it by this.query.sort("-price")
       this.query = this.query.sort("-createdAt");
     }
     return this;

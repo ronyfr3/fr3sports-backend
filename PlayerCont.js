@@ -2,6 +2,13 @@ const players = require("./Model");
 const APIfeatures = require("./ClassApi");
 
 const ShowPlayers = async (req, res) => {
+  //   console.log(req.query);
+  //   {
+  //   page: '1',
+  //   limit: '4',
+  //   sort: '-acutionPrice',
+  //   acutionPrice: { gte: '10' }
+  // }
   try {
     const features = new APIfeatures(players.find(), req.query)
       .filtering()
