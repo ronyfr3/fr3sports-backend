@@ -1,19 +1,19 @@
 const { json } = require("body-parser");
 
 /*Advanced filtering sorting pagination
-http://localhost:5000/api/players?page=1&limit=4&sort=-acutionPrice&acutionPrice[gte]=10
+http://localhost:5000/api/players?page=1&limit=4&sort=-auctionPrice&auctionPrice[gte]=10
 console.log(req.query);
   {
   page: '1',
   limit: '4',
-  sort: '-acutionPrice',
-  acutionPrice: { gte: '10' }
+  sort: '-auctionPrice',
+  auctionPrice: { gte: '10' }
 }
 here how this works with mongodb:::___
 req.query for above long url if we can get
 {price: { $gte: 1000 } this is the way mongodb understand or works
 generally we get all items like this const playes=await players.find({price:{$gte:1000}}) or
-const playes=await players.find().sort(-acutionPrice)
+const playes=await players.find().sort(-auctionPrice)
 but we need these together with one url/parameter
 */
 class APIfeatures {
@@ -21,11 +21,12 @@ class APIfeatures {
     this.query = query; //allplayers
     this.queryString = queryString; //queryString
   }
-  //http://localhost:5000/api/players?acutionPrice[gte]=10
+  //http://localhost:5000/api/players?auctionPrice[gte]=10
+  //http://localhost:5000/api/players?auctionPrice[gt]=5&auctionPrice[lte]=10
   filtering() {
     const queryobj = { ...this.queryString }; //copying queryString like ...{price:{$gte:10}}
     /*we works with pagination sort filter,for filtering we need to remove page sort limit fields
-    {price:{$gte:10}, sort:'-acutionPrice'} we need remove sort:'-acutionPrice'
+    {price:{$gte:10}, sort:'-auctionPrice'} we need remove sort:'-auctionPrice'
     after removing we get {price:{$gte:10} } delete method delete item but contain empty space for removed items
     thats why there is empty space {price:{$gte:10}emptyspace}
     josn.stringify does {price:{gte:10}} --> {"price":{"$gte":"10"}}
@@ -37,14 +38,19 @@ class APIfeatures {
     const excludeFields = ["page", "sort", "limit"];
     excludeFields.forEach((el) => delete queryobj[el]);
     let querystr = JSON.stringify(queryobj);
-    querystr = querystr.replace(/\b(gte|gt|lt|lte)\b/g, (match) => "$" + match);
+    //added regex for search capability
+    //http://localhost:5000/api/players?auctionPrice[gt]=5&name[regex]=hafiz
+    querystr = querystr.replace(
+      /\b(gte|gt|lt|lte|regex)\b/g,
+      (match) => "$" + match
+    );
     /*{"price":{"$gte":"10"}}-->after json.parse-->{price:{$gte:10}} mongodb understand this not {"price":{"$gte":"10"}}
     thats why we do json.parse*/
     this.query.find(JSON.parse(querystr));
     // console.log(querystr);
     return this;
   }
-  //http://localhost:5000/api/players?sort=-acutionPrice
+  //http://localhost:5000/api/players?sort=-auctionPrice
   sorting() {
     /*
       this.queryString.sort we can get this from req.query
@@ -65,7 +71,7 @@ class APIfeatures {
   //http://localhost:5000/api/players?page=1&limit=4
   paginating() {
     const page = this.queryString.page * 1 || 1; //initially its first page
-    const limit = this.queryString.limit * 1 || 4; //first page with 4 data
+    const limit = this.queryString.limit * 1 || 5; //first page with 4 data
     const skip = (page - 1) * limit; //1st page skip 0 data ,2nd page skip first 4 data
     this.query = this.query.skip(skip).limit(limit);
     return this;

@@ -4,8 +4,10 @@ const PlayerSchema = new mongoose.Schema(
   {
     name: { type: String },
     country: { type: String },
-    acutionPrice: { type: Number },
+    auctionPrice: { type: Number },
     iplTeam: { type: String },
+    teamLogo: { type: String },
+    image: { type: String },
   },
   {
     timestamps: true,

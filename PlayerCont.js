@@ -7,7 +7,7 @@ const ShowPlayers = async (req, res) => {
   //   page: '1',
   //   limit: '4',
   //   sort: '-acutionPrice',
-  //   acutionPrice: { gte: '10' }
+  //   auctionPrice: { gte: '10' }
   // }
   try {
     const features = new APIfeatures(players.find(), req.query)
@@ -22,7 +22,7 @@ const ShowPlayers = async (req, res) => {
     });
   } catch (error) {
     res.status(404).json({
-      status: "players not found",
+      status: "Failed",
       message: error.message,
     });
   }
@@ -30,10 +30,10 @@ const ShowPlayers = async (req, res) => {
 
 const createPlayer = async (req, res) => {
   try {
-    const { name, country, acutionPrice, iplTeam } = req.body;
-    if (!name || !country || !acutionPrice || !iplTeam)
+    const { name, country, auctionPrice, iplTeam, image, teamLogo } = req.body;
+    if (!name || !country || !auctionPrice || !iplTeam || !image || !teamLogo)
       return res.status(400).jaon({
-        message: "somehing missing!",
+        message: "player details missing!",
       });
     const checkExists = await players.findOne(name);
     if (checkExists)
@@ -41,8 +41,10 @@ const createPlayer = async (req, res) => {
     const newPlayer = new players({
       name: name.toLowerCase(),
       country: country.toLowerCase(),
-      acutionPrice,
+      auctionPrice,
       iplTeam: iplTeam.toLowerCase(),
+      image,
+      teamLogo,
     });
     await newPlayer.save();
     res.status(200).json({
@@ -51,7 +53,7 @@ const createPlayer = async (req, res) => {
     });
   } catch (error) {
     res.status(404).json({
-      status: "failed to create new player",
+      status: "failed",
       message: error.message,
     });
   }
